@@ -112,8 +112,10 @@ end
 
 This will mount following routes:
 
+    GET       /oauth/authorize/:code
     GET       /oauth/authorize
     POST      /oauth/authorize
+    PUT       /oauth/authorize
     DELETE    /oauth/authorize
     POST      /oauth/token
     POST      /oauth/revoke
@@ -189,7 +191,7 @@ class Api::V1::ProductsController < Api::V1::ApiController
 end
 ```
 
-### ActionController::Metal integration and other integrations
+### ActionController::Metal integration
 
 The `doorkeeper_for` filter is intended to work with ActionController::Metal
 too. You only need to include the required `ActionController` modules:
@@ -201,6 +203,25 @@ class MetalController < ActionController::Metal
   include Doorkeeper::Helpers::Filter
 
   doorkeeper_for :all
+end
+```
+
+### Route Constraints and other integrations
+
+You can leverage the `Doorkeeper.authenticate` facade to easily extract a
+`Doorkeeper::OAuth::Token` based on the current request. You can then ensure
+that token is still good, find its associated `#resource_owner_id`, etc.
+
+```ruby
+module Constraint
+  class Authenticated
+
+    def matches?(request)
+      token = Doorkeeper.authenticate(request)
+      token && token.accessible?
+    end
+
+  end
 end
 ```
 
@@ -222,7 +243,7 @@ Doorkeeper.configure do
 end
 ```
 
-The in your controllers:
+And in your controllers:
 
 ```ruby
 class Api::V1::ProductsController < Api::V1::ApiController
